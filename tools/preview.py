@@ -76,19 +76,6 @@ def weather(t, icon):
     return f
 
 
-def notifications(n):
-    f = blank()
-    stamp(f, art("BELL"), 3, 1)
-    text(f, "9+" if n > 9 else str(n), 7)
-    return f
-
-
-def dot(f):
-    g = [row[:] for row in f]
-    put(g, 11, 2, 255)
-    return g
-
-
 SLIDES = [
     ("emblem", emblem()),
     ("time 9:41", time(9, 41)),
@@ -98,11 +85,6 @@ SLIDES = [
     ("31 cloud", weather(31, "CLOUD")),
     ("-4 snow", weather(-4, "SNOW")),
     ("26 storm", weather(26, "STORM")),
-    ("emblem + dot", dot(emblem())),
-    ("time + dot", dot(time(12, 48))),
-    ("weather + dot", dot(weather(29, "SUN"))),
-    ("3 waiting", dot(notifications(3))),
-    ("12 waiting", dot(notifications(12))),
 ]
 
 

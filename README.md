@@ -10,11 +10,8 @@ the time and the weather on the 13×13 Glyph Matrix, a new slide every minute.
 2. Open it. The first time, Android asks to allow your browser to
    "Install unknown apps": allow it, go back and tap **Install**.
 3. Open **Astraya Glyph** and tap **Use my location for weather** (approximate is enough), or type your city and tap **Use this city**.
-4. Optional, for the notification dot: in the app tap **Allow notification access** and switch
-   Astraya Glyph on. If the switch is greyed out: Settings → Apps → Astraya Glyph → ⋮ →
-   **Allow restricted settings**, then try again.
-5. Settings → **Glyph Interface** → **Flip to Glyph** → **Always-on Glyph Toy** → **Astraya**.
-6. Lay the phone face down.
+4. Settings → **Glyph Interface** → **Flip to Glyph** → **Always-on Glyph Toy** → **Astraya**.
+5. Lay the phone face down.
 
 A newer build installs over the old one the same way (steps 1–2).
 
@@ -27,10 +24,6 @@ A newer build installs over the old one the same way (steps 1–2).
   the location saved when you open the app (rounded to about 1 km) or a typed
   city (Open-Meteo geocoding). The toy never
   reads location in the background.
-- With notification access, a dot (top right) appears on every slide and a bell slide
-  with the count joins the slideshow while notifications are waiting. Only the count
-  is read; silent and ongoing notifications don't count. The dot appears at once,
-  not a minute later.
 - Art lives as text in `Slides.kt`. `python3 -I tools/preview.py` draws every
   slide to `preview/slides.png` without building the app.
 

@@ -84,15 +84,7 @@ object Slides {
         BBBBBBB
     """
 
-    private val BELL = """
-        ..SSS..
-        .SSSSS.
-        .SSSSS.
-        SSSSSSS
-        ...S...
-    """
-
-    /** 3x5 digits (3-bit rows, top to bottom), plus minus and plus signs. */
+    /** 3x5 digits (3-bit rows, top to bottom), plus a minus sign. */
     private val FONT = mapOf(
         '0' to intArrayOf(0b111, 0b101, 0b101, 0b101, 0b111),
         '1' to intArrayOf(0b010, 0b110, 0b010, 0b010, 0b111),
@@ -105,12 +97,7 @@ object Slides {
         '8' to intArrayOf(0b111, 0b101, 0b111, 0b101, 0b111),
         '9' to intArrayOf(0b111, 0b101, 0b111, 0b001, 0b111),
         '-' to intArrayOf(0b000, 0b000, 0b111, 0b000, 0b000),
-        '+' to intArrayOf(0b000, 0b010, 0b111, 0b010, 0b000),
     )
-
-    /** Where the "notifications waiting" dot sits: top right, clear of every slide's art. */
-    const val DOT_X = 11
-    const val DOT_Y = 2
 
     fun emblem(): IntArray = IntArray(SIZE * SIZE).also { stamp(it, EMBLEM, 0, 0) }
 
@@ -132,17 +119,6 @@ object Slides {
         set(frame, left + label.length * 4, 7, BLADE)
         return frame
     }
-
-    /** A bell on top, how many notifications are waiting below (9+ past nine). */
-    fun notifications(count: Int): IntArray {
-        val frame = IntArray(SIZE * SIZE)
-        stamp(frame, BELL, x = 3, y = 1)
-        text(frame, if (count > 9) "9+" else count.toString(), y = 7)
-        return frame
-    }
-
-    /** The same frame with the "notifications waiting" dot added. */
-    fun withDot(frame: IntArray): IntArray = frame.copyOf().also { set(it, DOT_X, DOT_Y, SHARD) }
 
     /** WMO weather codes, as Open-Meteo reports them. */
     private fun iconFor(code: Int, isDay: Boolean): String = when (code) {
