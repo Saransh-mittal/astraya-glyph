@@ -5,6 +5,7 @@ import android.util.Log
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -26,12 +27,44 @@ object Weather {
 
     private val fetching = AtomicBoolean(false)
 
-    fun saveLocation(context: Context, lat: Double, lon: Double) {
+    fun saveLocation(context: Context, lat: Double, lon: Double, label: String?) {
         prefs(context).edit()
             .putString("lat", "%.2f".format(Locale.US, lat))
             .putString("lon", "%.2f".format(Locale.US, lon))
+            .putString("label", label)
             .putLong("at", 0)
             .apply()
+    }
+
+    fun label(context: Context): String? = prefs(context).getString("label", null)
+
+    /** Looks a typed city up with Open-Meteo's geocoder and saves it; [onDone] gets whether it was found. */
+    fun findCity(context: Context, name: String, onDone: (Boolean) -> Unit) {
+        val app = context.applicationContext
+        Thread {
+            val found = try {
+                val q = URLEncoder.encode(name.take(80), "UTF-8")
+                val body = get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1")
+                val hit = JSONObject(body).optJSONArray("results")?.optJSONObject(0)
+                if (hit != null) {
+                    val label = listOf(hit.optString("name"), hit.optString("country"))
+                        .filter { it.isNotBlank() }.joinToString(", ")
+                    saveLocation(app, hit.getDouble("latitude"), hit.getDouble("longitude"), label)
+                }
+                hit != null
+            } catch (e: Exception) {
+                Log.w(TAG, "city lookup failed", e)
+                false
+            }
+            onDone(found)
+        }.start()
+    }
+
+    private fun get(url: String): String {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        conn.connectTimeout = 10_000
+        conn.readTimeout = 10_000
+        return conn.inputStream.use { it.readBytes().decodeToString() }
     }
 
     fun clearLocation(context: Context) {
@@ -57,14 +90,10 @@ object Weather {
         val app = context.applicationContext
         Thread {
             try {
-                val url = URL(
+                val body = get(
                     "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon" +
                         "&current=temperature_2m,weather_code,is_day"
                 )
-                val conn = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 10_000
-                conn.readTimeout = 10_000
-                val body = conn.inputStream.use { it.readBytes().decodeToString() }
                 val current = JSONObject(body).getJSONObject("current")
                 prefs(app).edit()
                     .putInt("temp", Math.round(current.getDouble("temperature_2m")).toInt())

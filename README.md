@@ -9,7 +9,7 @@ the time and the weather on the 13×13 Glyph Matrix, a new slide every minute.
    `https://github.com/Saransh-mittal/astraya-glyph/releases/latest/download/astraya-glyph.apk`
 2. Open it. The first time, Android asks to allow your browser to
    "Install unknown apps": allow it, go back and tap **Install**.
-3. Open **Astraya Glyph** and tap **Use my location for weather** (approximate is enough).
+3. Open **Astraya Glyph** and tap **Use my location for weather** (approximate is enough), or type your city and tap **Use this city**.
 4. Settings → **Glyph Interface** → **Flip to Glyph** → **Always-on Glyph Toy** → **Astraya**.
 5. Lay the phone face down.
 
@@ -21,7 +21,8 @@ A newer build installs over the old one the same way (steps 1–2).
   day picks the slide: emblem → time → weather. Weather is skipped until there
   is data less than 3 hours old.
 - Weather comes from [Open-Meteo](https://open-meteo.com) (free, no key), using
-  the location saved when you open the app, rounded to about 1 km. The toy never
+  the location saved when you open the app (rounded to about 1 km) or a typed
+  city (Open-Meteo geocoding). The toy never
   reads location in the background.
 - Art lives as text in `Slides.kt`. `python3 -I tools/preview.py` draws every
   slide to `preview/slides.png` without building the app.
