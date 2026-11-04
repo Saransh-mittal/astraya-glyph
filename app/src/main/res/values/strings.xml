@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Astraya Glyph</string>
+    <string name="toy_name">Astraya</string>
+    <string name="toy_summary">Emblem, time and weather, a new slide every minute</string>
+</resources>

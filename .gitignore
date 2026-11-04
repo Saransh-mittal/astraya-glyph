@@ -1,0 +1,10 @@
+# Nothing's Glyph SDK may not be redistributed (its licence, section 2.1c):
+# the build downloads it from Nothing's own repository instead.
+app/libs/*.aar
+*.jks
+*.keystore
+.gradle/
+build/
+local.properties
+preview/
+.keystore-password
