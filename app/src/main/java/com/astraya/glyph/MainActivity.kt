@@ -2,6 +2,9 @@ package com.astraya.glyph
 
 import android.Manifest
 import android.app.Activity
+import android.content.ComponentName
+import android.content.Intent
+import android.provider.Settings
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
@@ -34,6 +37,8 @@ class MainActivity : Activity() {
     private lateinit var previewLabel: TextView
     private lateinit var refresh: Button
     private lateinit var off: Button
+    private lateinit var notifStatus: TextView
+    private lateinit var notifButton: Button
 
     private val ui = Handler(Looper.getMainLooper())
     private var previewIndex = 0
@@ -68,6 +73,8 @@ class MainActivity : Activity() {
                 showStatus("Weather turned off. The Glyph now shows just the emblem and the time.")
             }
         }
+        notifStatus = TextView(this).apply { textSize = 15f; setPadding(0, pad / 3, 0, pad / 3) }
+        notifButton = Button(this).apply { setOnClickListener { onNotifButton() } }
         val fill = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -92,6 +99,9 @@ class MainActivity : Activity() {
             addView(Button(context).apply { text = "Use this city"; setOnClickListener { useCity() } }, fill)
             addView(refresh, fill)
             addView(off, fill)
+            addView(TextView(context).apply { text = "Notifications"; textSize = 20f; setPadding(0, pad, 0, 0) }, fill)
+            addView(notifStatus, fill)
+            addView(notifButton, fill)
         }
         setContentView(ScrollView(this).apply { addView(column) })
         showStatus()
@@ -100,7 +110,48 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         Weather.refreshIfStale(this) { ui.post { showStatus() } }
+        showNotifStatus()
         ui.post(previewTick)
+    }
+
+    /**
+     * Without access, opens this app's Notification access page. Android blocks
+     * that page for apps installed from a browser until "Allow restricted
+     * settings" is tapped in App info, so the status text says so.
+     */
+    private fun onNotifButton() {
+        if (!Notifications.hasAccess(this)) {
+            val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+                .putExtra(
+                    Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                    ComponentName(this, NotificationCounter::class.java).flattenToString(),
+                )
+            runCatching { startActivity(intent) }
+                .onFailure { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+            return
+        }
+        Notifications.setEnabled(this, !Notifications.enabled(this))
+        showNotifStatus()
+        previewIndex = 0
+    }
+
+    private fun showNotifStatus() {
+        val access = Notifications.hasAccess(this)
+        val on = Notifications.enabled(this)
+        notifStatus.text = when {
+            !access -> "Off. To show a dot and a count on the Glyph when notifications are waiting, " +
+                "allow notification access. If the switch is greyed out: open App info for " +
+                "Astraya Glyph → ⋮ (top right) → Allow restricted settings, then try again. " +
+                "Only the number of notifications is read, never their content."
+            !on -> "Access allowed, but switched off here."
+            else -> "On: ${Notifications.count(this)} waiting. A dot appears top right and a bell " +
+                "slide joins the slideshow while any are waiting. Silent and ongoing ones (music, maps) don't count."
+        }
+        notifButton.text = when {
+            !access -> "Allow notification access"
+            on -> "Turn notifications off"
+            else -> "Turn notifications on"
+        }
     }
 
     override fun onPause() {

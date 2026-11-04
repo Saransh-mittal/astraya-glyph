@@ -32,20 +32,45 @@ class AstrayaToyService : Service() {
     private val messenger = Messenger(handler)
 
     override fun onBind(intent: Intent?): IBinder {
+        bound = true
         draw()
         return messenger.binder
     }
 
+    override fun onUnbind(intent: Intent?): Boolean {
+        bound = false
+        return super.onUnbind(intent)
+    }
+
     private fun draw() {
         Weather.refreshIfStale(this)
-        val now = Calendar.getInstance()
-        val slides = Slideshow.slides(this, now)
-        val minuteOfDay = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-        GlyphLink.pushFrame(this, slides[minuteOfDay % slides.size].second)
+        redraw(this)
+    }
+
+    companion object {
+        /** True while the system shows this toy; nothing is pushed to the matrix otherwise. */
+        @Volatile
+        private var bound = false
+
+        /**
+         * Draws the slide for this minute now. Called on each tick, and when the
+         * notification count changes so the dot appears without waiting a minute.
+         */
+        fun redraw(context: Context) {
+            if (!bound) return
+            val now = Calendar.getInstance()
+            val slides = Slideshow.slides(context, now)
+            val minuteOfDay = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+            GlyphLink.pushFrame(context, slides[minuteOfDay % slides.size].second)
+        }
     }
 }
 
-/** The slides in order: emblem → time → weather (weather only while it is fresh). */
+/**
+ * The slides in order: emblem → time → weather (only while fresh) →
+ * notifications (only while some are waiting, and then every slide carries
+ * the dot).
+ */
 object Slideshow {
     fun slides(context: Context, now: Calendar): List<Pair<String, IntArray>> {
         val h24 = now.get(Calendar.HOUR_OF_DAY)
@@ -57,6 +82,9 @@ object Slideshow {
         Weather.cached(context)?.let {
             list += "Weather" to Slides.weather(it.tempC, it.code, it.isDay)
         }
-        return list
+        val waiting = Notifications.count(context)
+        if (waiting == 0) return list
+        list += "Notifications" to Slides.notifications(waiting)
+        return list.map { (name, frame) -> name to Slides.withDot(frame) }
     }
 }
