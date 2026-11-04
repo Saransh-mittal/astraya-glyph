@@ -1,6 +1,7 @@
 package com.astraya.glyph
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.IBinder
@@ -12,8 +13,7 @@ import java.util.Calendar
 
 /**
  * The Always-on Glyph Toy. On the Phone (4a) Pro the system sends EVENT_AOD
- * about once a minute, so the slideshow advances one slide per minute:
- * emblem → time → weather (weather is skipped until there is fresh data).
+ * about once a minute, so the slideshow advances one slide per minute.
  *
  * The slide comes from the clock, not a counter, so a restarted service
  * picks up exactly where the slideshow would be.
@@ -39,18 +39,24 @@ class AstrayaToyService : Service() {
     private fun draw() {
         Weather.refreshIfStale(this)
         val now = Calendar.getInstance()
-        val weather = Weather.cached(this)
-        val slides = if (weather != null) 3 else 2
+        val slides = Slideshow.slides(this, now)
         val minuteOfDay = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-        val frame = when (minuteOfDay % slides) {
-            0 -> Slides.emblem()
-            1 -> {
-                val h24 = now.get(Calendar.HOUR_OF_DAY)
-                val hours = if (DateFormat.is24HourFormat(this)) h24 else (h24 + 11) % 12 + 1
-                Slides.time(hours, now.get(Calendar.MINUTE))
-            }
-            else -> Slides.weather(weather!!.tempC, weather.code, weather.isDay)
+        GlyphLink.pushFrame(this, slides[minuteOfDay % slides.size].second)
+    }
+}
+
+/** The slides in order: emblem → time → weather (weather only while it is fresh). */
+object Slideshow {
+    fun slides(context: Context, now: Calendar): List<Pair<String, IntArray>> {
+        val h24 = now.get(Calendar.HOUR_OF_DAY)
+        val hours = if (DateFormat.is24HourFormat(context)) h24 else (h24 + 11) % 12 + 1
+        val list = mutableListOf(
+            "Emblem" to Slides.emblem(),
+            "Time" to Slides.time(hours, now.get(Calendar.MINUTE)),
+        )
+        Weather.cached(context)?.let {
+            list += "Weather" to Slides.weather(it.tempC, it.code, it.isDay)
         }
-        GlyphLink.pushFrame(this, frame)
+        return list
     }
 }

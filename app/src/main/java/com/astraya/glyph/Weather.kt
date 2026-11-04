@@ -80,12 +80,19 @@ object Weather {
         return Now(p.getInt("temp", 0), p.getInt("code", 0), p.getBoolean("day", true))
     }
 
-    /** Fetches on a background thread when the cache is older than [REFRESH_MS]. */
-    fun refreshIfStale(context: Context, onDone: (() -> Unit)? = null) {
+    /** Why the last fetch failed, in plain words; null after a success. */
+    fun lastError(context: Context): String? = prefs(context).getString("error", null)
+
+    /**
+     * Fetches on a background thread when the cache is older than [REFRESH_MS]
+     * (or always, with [force]). [onDone] runs on that thread, or not at all
+     * when nothing was fetched.
+     */
+    fun refreshIfStale(context: Context, force: Boolean = false, onDone: (() -> Unit)? = null) {
         val p = prefs(context)
         val lat = p.getString("lat", null) ?: return
         val lon = p.getString("lon", null) ?: return
-        if (System.currentTimeMillis() - p.getLong("at", 0) < REFRESH_MS) return
+        if (!force && System.currentTimeMillis() - p.getLong("at", 0) < REFRESH_MS) return
         if (!fetching.compareAndSet(false, true)) return
         val app = context.applicationContext
         Thread {
@@ -100,9 +107,16 @@ object Weather {
                     .putInt("code", current.getInt("weather_code"))
                     .putBoolean("day", current.getInt("is_day") == 1)
                     .putLong("at", System.currentTimeMillis())
+                    .remove("error")
                     .apply()
             } catch (e: Exception) {
                 Log.w(TAG, "weather fetch failed", e)
+                val why = when (e) {
+                    is java.net.UnknownHostException -> "no internet connection"
+                    is java.net.SocketTimeoutException -> "the weather service didn't answer in time"
+                    else -> "the weather service sent something unexpected"
+                }
+                prefs(app).edit().putString("error", why).apply()
             } finally {
                 fetching.set(false)
                 onDone?.invoke()
